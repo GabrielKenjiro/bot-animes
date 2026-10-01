@@ -1,29 +1,43 @@
 name: Bot de Animes
+
 on:
   schedule:
-    # Roda a cada 30 minutos
+    # Roda a cada 30 minutos para checar novos episódios
     - cron: '*/30 * * * *'
-  workflow_dispatch: # Permite rodar manualmente no GitHub
+    # Roda às 22:00 no horário de Brasília (01:00 UTC) para enviar o resumo do dia
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Instalar pacotes
         run: npm install
-      - name: Rodar o bot
+
+      - name: Rodar verificação normal
+        if: github.event.schedule != '0 1 * * *'
         run: node bot.js
-      - name: Salvar o último episódio visto
+
+      - name: Rodar Resumo Diário (Recap)
+        if: github.event.schedule == '0 1 * * *'
+        run: node bot.js --recap
+
+      - name: Salvar alterações
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action Bot"
-          git add ultimo_episodio.txt || true
-          git commit -m "Atualiza ultimo episodio" || true
+          git add ultimo_episodio.txt lancamentos_hoje.txt || true
+          git commit -m "Atualiza arquivos de histórico" || true
           git push || true
