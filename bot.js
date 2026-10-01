@@ -2,14 +2,13 @@ import fs from 'fs';
 import * as cheerio from 'cheerio';
 
 const telefone = "5511953622481";
-const apikey = "7271489"; // <-- COLOQUE SUA APIKEY NUMÉRICA AQUI
+const apikey = "7271489"; // Emoĩ nde apiKey numérica ko'ápe
 const siteUrl = "https://meusanimes.blog/";
 
 async function verificarNovidades() {
   try {
     console.log("Acessando o site meusanimes.blog...");
     
-    // 1. Requisita a página do site
     const respostaSite = await fetch(siteUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -24,17 +23,17 @@ async function verificarNovidades() {
     const html = await respostaSite.text();
     const $ = cheerio.load(html);
 
-    // 2. Extrai as informações do lançamento
     let textoEpisodio = "";
 
     $('.episodes-list .item, .last-episodes .item, article').first().each((i, el) => {
       textoEpisodio = $(el).text().trim().replace(/\s+/g, ' ');
     });
 
-    // Se o seletor acima for vazio, busca pelo primeiro link de episódio
     if (!textoEpisodio) {
       $('a[href*="episodio"]').first().each((i, el) => {
-        textoEpisodio = $(el).attr('title') \vert{}\vert{}$(el).text().trim();
+        const titleAttr = $(el).attr('title');
+        const textContent = $(el).text().trim();
+        textoEpisodio = titleAttr ? titleAttr : textContent;
       });
     }
 
@@ -45,13 +44,11 @@ async function verificarNovidades() {
 
     const lancamentoDetectado = textoEpisodio.replace(/\s+/g, ' ').trim();
 
-    // 3. Lê o histórico salvo
     let ultimoSalvo = "";
     if (fs.existsSync("ultimo_episodio.txt")) {
       ultimoSalvo = fs.readFileSync("ultimo_episodio.txt", "utf-8").trim();
     }
 
-    // 4. Envia para o WhatsApp se for novidade
     if (lancamentoDetectado !== ultimoSalvo) {
       console.log(`Novo lançamento encontrado: "${lancamentoDetectado}"`);
 
