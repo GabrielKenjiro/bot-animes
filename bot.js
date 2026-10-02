@@ -1,7 +1,12 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const fs = require('fs');
-const path = require('path');
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const SITE_URL = 'https://meusanimes.blog/';
 const PHONE = '5511953622481';
@@ -20,7 +25,7 @@ async function verificarNovoEpisodio() {
 
         console.log(`Verificando o site ${SITE_URL}...`);
         const { data } = await axios.get(SITE_URL, {
-            httpsAgent: new (require('https')).Agent({ rejectUnauthorized: false })
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
         const $ = cheerio.load(data);
 
@@ -29,8 +34,7 @@ async function verificarNovoEpisodio() {
         let novosEpisodios = [];
         let novosParaSalvar = [];
         
-        // O site fixa alguns animes (ex: Demon Slayer) no topo. 
-        // Para resolver isso, vamos checar os primeiros 15 episódios e guardar uma lista.
+        // Checa os primeiros 15 episódios para pular os fixados
         for (let i = 0; i < 15; i++) {
             if (i >= epNodes.length) break;
             
@@ -41,7 +45,7 @@ async function verificarNovoEpisodio() {
             if (nomeDoEpisodio) {
                 novosParaSalvar.push(nomeDoEpisodio);
                 
-                // Se o nome não estava na nossa lista de vistos e já temos uma lista salva
+                // Se o nome não estava na nossa lista de vistos
                 if (!ultimosEpisodiosVistos.includes(nomeDoEpisodio) && ultimosEpisodiosVistos.length > 0) {
                     novosEpisodios.push({ nome: nomeDoEpisodio, link: linkDoEpisodio });
                 }
@@ -62,7 +66,7 @@ async function verificarNovoEpisodio() {
             console.log('Nenhum episódio novo por enquanto.');
         }
 
-        // Sempre atualiza o arquivo com a nova lista dos 15 mais recentes
+        // Atualiza a memória do robô
         fs.writeFileSync(dbPath, novosParaSalvar.join('\n'));
         console.log('Arquivo ultimo_episodio.txt atualizado com a nova lista.');
 
