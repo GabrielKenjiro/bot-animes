@@ -28,8 +28,7 @@ jobs:
 
       - name: Rodar verificação normal
         if: github.event.schedule != '0 1 * * *'
-        run: node bot.js
-
+        run: npm install axios cheerio && node bot.js
       - name: Rodar Resumo Diário (Recap)
         if: github.event.schedule == '0 1 * * *'
         run: node bot.js --recap
