@@ -41,13 +41,18 @@ async function verificarNovoEpisodio() {
             const elemento = epNodes.eq(i);
             const nomeDoEpisodio = elemento.find('.data a').text().trim();
             const linkDoEpisodio = elemento.find('.data a').attr('href') || SITE_URL;
+            const imagemDoEpisodio = elemento.find('.poster img').attr('src') || '';
             
             if (nomeDoEpisodio) {
                 novosParaSalvar.push(nomeDoEpisodio);
                 
                 // Se o nome não estava na nossa lista de vistos
                 if (!ultimosEpisodiosVistos.includes(nomeDoEpisodio) && ultimosEpisodiosVistos.length > 0) {
-                    novosEpisodios.push({ nome: nomeDoEpisodio, link: linkDoEpisodio });
+                    novosEpisodios.push({ 
+                        nome: nomeDoEpisodio, 
+                        link: linkDoEpisodio,
+                        imagem: imagemDoEpisodio 
+                    });
                 }
             }
         }
@@ -55,8 +60,15 @@ async function verificarNovoEpisodio() {
         if (novosEpisodios.length > 0) {
             console.log(`Encontrados ${novosEpisodios.length} novos episódios! Enviando mensagem...`);
             
-            // Monta uma mensagem com todos os episódios novos
-            let listaTexto = novosEpisodios.map(ep => `*${ep.nome}*\nAssista: ${ep.link}`).join('\n\n');
+            // Monta a mensagem com Nome, Link do Episódio e Link da Foto/Capa
+            let listaTexto = novosEpisodios.map(ep => {
+                let txt = `*${ep.nome}*\n▶️ Assista: ${ep.link}`;
+                if (ep.imagem) {
+                    txt += `\n🖼️ Capa: ${ep.imagem}`;
+                }
+                return txt;
+            }).join('\n\n-------------------\n\n');
+
             const mensagem = encodeURIComponent(`*🤖 Bip Bop! Anime(s) Novo(s)!*\n\n${listaTexto}`);
             
             const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${PHONE}&text=${mensagem}&apikey=${APIKEY}`;
