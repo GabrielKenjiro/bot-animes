@@ -9,10 +9,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SITE_URL = 'https://meusanimes.blog/';
-const PHONE = '5511953622481';
-const APIKEY = '7271489';
 
-// Arquivo onde salvaremos os episódios no GitHub
+// ================= CONFIGURAÇÕES DO TELEGRAM =================
+const TELEGRAM_BOT_TOKEN = '8941398606:AAG0UTbc2XftanYrU7puov8fNXKZ_0e7PKE'; 
+const TELEGRAM_CHAT_ID = '7777383282'; 
+// ============================================================
+
 const dbPath = path.join(__dirname, 'ultimo_episodio.txt');
 
 async function verificarNovoEpisodio() {
@@ -40,39 +42,55 @@ async function verificarNovoEpisodio() {
             const elemento = epNodes.eq(i);
             const nomeDoEpisodio = elemento.find('.data a').text().trim();
             const linkDoEpisodio = elemento.find('.data a').attr('href') || SITE_URL;
+            const imagemDoEpisodio = elemento.find('.poster img').attr('src') || '';
             
             if (nomeDoEpisodio) {
                 novosParaSalvar.push(nomeDoEpisodio);
                 
-                // Se o nome não estava na nossa lista de vistos
                 if (!ultimosEpisodiosVistos.includes(nomeDoEpisodio) && ultimosEpisodiosVistos.length > 0) {
                     novosEpisodios.push({ 
                         nome: nomeDoEpisodio, 
-                        link: linkDoEpisodio
+                        link: linkDoEpisodio,
+                        imagem: imagemDoEpisodio
                     });
                 }
             }
         }
         
         if (novosEpisodios.length > 0) {
-            console.log(`Encontrados ${novosEpisodios.length} novos episódios! Enviando mensagem...`);
+            console.log(`Encontrados ${novosEpisodios.length} novos episódios! Enviando fotos para o Telegram...`);
             
-            // Envia cada episódio separadamente para o WhatsApp carregar a prévia visual da foto
             for (const ep of novosEpisodios) {
-                const mensagem = encodeURIComponent(`*🤖 Bip Bop! Anime Novo!*\n\n*${ep.nome}*\n\n▶️ Assista aqui:\n${ep.link}`);
-                const callmebotUrl = `https://api.callmebot.com/whatsapp.php?phone=${PHONE}&text=${mensagem}&apikey=${APIKEY}`;
-                await axios.get(callmebotUrl);
-                // Pausa de 2 segundos entre mensagens
-                await new Promise(r => setTimeout(r, 2000));
+                const legenda = `<b>🤖 Bip Bop! Anime Novo!</b>\n\n<b>${ep.nome}</b>\n\n▶️ <a href="${ep.link}">Clique aqui para assistir</a>`;
+                
+                if (ep.imagem) {
+                    // Envia a FOTO NATIVA com a legenda embutida na foto
+                    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+                    await axios.post(telegramUrl, {
+                        chat_id: TELEGRAM_CHAT_ID,
+                        photo: ep.imagem,
+                        caption: legenda,
+                        parse_mode: 'HTML'
+                    });
+                } else {
+                    // Mensagem de texto caso não tenha foto
+                    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                    await axios.post(telegramUrl, {
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: legenda,
+                        parse_mode: 'HTML'
+                    });
+                }
+                
+                await new Promise(r => setTimeout(r, 1000));
             }
-            console.log('Mensagens enviadas no WhatsApp!');
+            console.log('Fotos enviadas no Telegram com sucesso!');
         } else {
             console.log('Nenhum episódio novo por enquanto.');
         }
 
-        // Atualiza a memória do robô
         fs.writeFileSync(dbPath, novosParaSalvar.join('\n'));
-        console.log('Arquivo ultimo_episodio.txt atualizado com a nova lista.');
+        console.log('Arquivo ultimo_episodio.txt atualizado.');
 
     } catch (error) {
         console.error('Erro ao verificar o site de animes:', error.message);
